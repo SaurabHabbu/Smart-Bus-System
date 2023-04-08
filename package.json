@@ -1,0 +1,19 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "description": "creating api for users to access db",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SaurabHabbu/Smart-Bus-System.git"
+  },
+  "author": "saurabhabbu",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SaurabHabbu/Smart-Bus-System/issues"
+  },
+  "homepage": "https://github.com/SaurabHabbu/Smart-Bus-System#readme"
+}
