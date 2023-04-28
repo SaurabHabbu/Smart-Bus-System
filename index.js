@@ -39,7 +39,6 @@ app.get('/:rfidno', (req, res) => {
 });
 
 // Start the server
-const hostname = '0.0.0.0'
 const port = 3000;
 app.listen(port,hostname, () => {
   console.log(`Server is running on port ${port}`);
