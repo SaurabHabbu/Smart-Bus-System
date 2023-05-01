@@ -326,7 +326,7 @@ app.post("/wallet_update/:rfidno", (req, res) => {
 });
 
 app.get("/wallet/:emailid", (req, res) => {
-  const emailid = req.params.rfidno;
+  const emailid = req.params.emailid;
   const sql = `SELECT wallet_amt FROM register WHERE email = '${emailid}' `;
 
   connection.query(sql, (err, [result]) => {
