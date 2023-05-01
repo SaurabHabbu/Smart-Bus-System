@@ -335,7 +335,7 @@ app.get("/wallet/:emailid", (req, res) => {
       res.status(500).send("Error executing MySQL query");
       return;
     }
-    res.send(result["wallet_amt"]);
+    res.send(result);
   });
 });
 
