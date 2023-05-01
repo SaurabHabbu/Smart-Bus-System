@@ -325,9 +325,9 @@ app.post("/wallet_update/:rfidno", (req, res) => {
   });
 });
 
-app.get("/wallet/:rfidno", (req, res) => {
+app.get("/wallet/:email", (req, res) => {
   const rfidno = req.params.rfidno;
-  const sql = `SELECT wallet_amt FROM register WHERE rfidno = '${rfidno}' `;
+  const sql = `SELECT wallet_amt FROM register WHERE email = '${email}' `;
 
   connection.query(sql, (err, [result]) => {
     if (err) {
