@@ -1,4 +1,4 @@
-const googleMapsClient = require('@google/maps').createClient({
+/* const googleMapsClient = require('@google/maps').createClient({
   key: 'AIzaSyBXimlauknGEyl2PSJeTTh8ykMZVUNUn8E',
 });
 
@@ -39,3 +39,17 @@ var json_got = arrival_time1();
 console.log(json_got);
 }
 
+ */
+
+function myFunction() {
+  var myVariable = 'Hello World!';
+
+  function innerFunction() {
+    console.log(myVariable);
+  }
+
+  return innerFunction;
+}
+
+var closure = myFunction();
+closure(); // Output: Hello World!

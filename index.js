@@ -77,6 +77,40 @@ app.get("/user_fetch/:emailid", (req, res) => {
     res.send(result);
   });
 });
+
+app.get("/bus_fetch",(req, res) => {
+  const sql = `SELECT * FROM bus_info `;
+  connection.query(sql, (err, [result]) => {
+    if (err) {
+      console.error("Error executing MySQL query: ", err);
+      res.status(500).send("Error executing MySQL query");
+      return;
+    }
+
+    res.send(result)
+
+});
+});
+
+
+app.get("/user_history/:emailid", (req, res) => {
+  var rfidno;
+  const emailid = req.params.emailid;
+  const sql = `SELECT rfidno FROM register WHERE email = '${emailid}'`;
+  connection.query(sql, (err, [result]) => {
+    if (err) {
+      console.error("Error executing MySQL query: ", err);
+      res.status(500).send("Error executing MySQL query");
+      return;
+    }
+    rfidno = result["rfidno"];
+   
+ 
+});
+});
+
+
+
 app.get("/:rfidno", (req, res) => {
   const rfidno = req.params.rfidno;
   const sql = `SELECT * FROM register WHERE rfidno = '${rfidno}' `;
