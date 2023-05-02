@@ -93,17 +93,18 @@ app.get("/bus_fetch",(req, res) => {
 });
 
 
-app.get("/user_history/:emailid", (req, res) => {
-  var rfidno;
-  const emailid = req.params.emailid;
-  const sql = `SELECT rfidno FROM register WHERE email = '${emailid}'`;
-  connection.query(sql, (err, [result]) => {
+app.get("/user_history/:rfidno", (req, res) => {
+ 
+  const rfidno = req.params.rfidno;
+  const sql = `SELECT * FROM user_travel WHERE rfidno = '${rfidno}'`;
+  connection.query(sql, (err, result) => {
     if (err) {
       console.error("Error executing MySQL query: ", err);
       res.status(500).send("Error executing MySQL query");
       return;
     }
-    rfidno = result["rfidno"];
+    
+    res.send(result)
    
  
 });
@@ -218,6 +219,7 @@ app.post("/user_tapout", (req, res) => {
   });
 });
 
+
 function get_mapsjson(callback, rfidno, travel_id, inloc, outloc) {
   const mode = "driving";
 
@@ -237,6 +239,7 @@ function get_mapsjson(callback, rfidno, travel_id, inloc, outloc) {
     }
   );
 }
+
 
 function arrivaltime(error, jsonData, travel_id, rfidno) {
   if (error) throw error;
@@ -260,6 +263,7 @@ function distance_calculation(error, jsonData, travel_id, rfidno) {
   });
 }
 
+
 function fare_calculation(error, jsonData, travel_id, rfidno) {
   if (error) throw error;
   const distance = jsonData.distance.value / 1000; // convert distance from meters to kilometers
@@ -277,7 +281,7 @@ function fare_calculation(error, jsonData, travel_id, rfidno) {
     }
   });
 
-  const apiUrl = "http://localhost:5000/wallet/" + rfidno;
+  const apiUrl = "http://192.168.43.168:5000/wallet/" + rfidno;
 
   // Make the GET request
   axios
@@ -294,7 +298,7 @@ function fare_calculation(error, jsonData, travel_id, rfidno) {
       };
       if (wallet_amt > 50)
         axios
-          .post("http://localhost:5000/wallet_update/" + rfidno, postData)
+          .post("http://192.168.43.168:5000/wallet_update/" + rfidno, postData)
           .then((response) => {
             console.log("Message sent successfully!");
           })
