@@ -153,7 +153,7 @@ app.post("/bus_location_update", (req, res) => {
       res.status(500).send("error executing MYSQL query");
       return;
     }
-    res.send(true);
+    res.send("true");
     //console.log(data["lat"]);
   });
 });
