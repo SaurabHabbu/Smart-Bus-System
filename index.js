@@ -281,7 +281,7 @@ function fare_calculation(error, jsonData, travel_id, rfidno) {
     }
   });
 
-  const apiUrl = "http://192.168.43.168:5000/wallet/" + rfidno;
+  const apiUrl = "https://smart-bus-system-fyp.onrender.com/wallet/" + rfidno;
 
   // Make the GET request
   axios
@@ -298,7 +298,7 @@ function fare_calculation(error, jsonData, travel_id, rfidno) {
       };
       if (wallet_amt > 50)
         axios
-          .post("http://192.168.43.168:5000/wallet_update/" + rfidno, postData)
+          .post("http://smart-bus-system-fyp.onrender.com/wallet_update/" + rfidno, postData)
           .then((response) => {
             console.log("Message sent successfully!");
           })
