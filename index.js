@@ -92,6 +92,20 @@ app.get("/bus_fetch",(req, res) => {
 });
 });
 
+app.get("/wallet/:rfidno",(req, res) => {
+  const rfidno = req.params.rfidno;
+  const sql = `SELECT  FROM register WHERE rfidno = '${rfidno}'`;
+  connection.query(sql, (err, [result]) => {
+    if (err) {
+      console.error("Error executing MySQL query: ", err);
+      res.status(500).send("Error executing MySQL query");
+      return;
+    }
+
+    res.send(result)
+
+});
+});
 
 app.get("/user_history/:rfidno", (req, res) => {
  
@@ -298,7 +312,7 @@ function fare_calculation(error, jsonData, travel_id, rfidno) {
       };
       if (wallet_amt > 50)
         axios
-          .post("http://smart-bus-system-fyp.onrender.com/wallet_update/" + rfidno, postData)
+          .post("https://smart-bus-system-fyp.onrender.com/wallet_update/" + rfidno, postData)
           .then((response) => {
             console.log("Message sent successfully!");
           })
