@@ -270,7 +270,7 @@ function fare_calculation(error, jsonData, travel_id, rfidno) {
   let fare = baseFare + distance * farePerKm;
   console.log(`The fare  is ${fare.toFixed(2)}`);
 
-  const sql = `UPDATE  user_travel SET  amt_deduct = '${fare}'  WHERE id = '${travel_id}' `;
+  const sql = `UPDATE  user_travel SET  amt_detect = '${fare}'  WHERE id = '${travel_id}' `;
   //let values = [1,data["rfidno"],data["bus_uniqueno"],data["inlat"],data["inlong"],data["inlat"],data["inlong"],1,0,"None", "dsf"];
 
   connection.query(sql, (err, result) => {
