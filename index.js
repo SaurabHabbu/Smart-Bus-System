@@ -125,7 +125,26 @@ app.get("/user_history/:rfidno", (req, res) => {
 });
 
 
+app.get("/amt_present/:rfidno", (req,res) => {
+  const rfidno = req.params.rfidno;
+  const sql = `SELECT wallet_amt FROM register WHERE rfidno = '${rfidno}' `;
 
+  connection.query(sql, (err, [result]) => {
+    if (err) {
+      console.error("Error executing MySQL query: ", err);
+      res.status(500).send("Error executing MySQL query");
+      return;
+    }
+    var wallet_amt = result["wallet_amt"];
+    if(wallet_amt < 50){
+      res.send("No Entry!Recharge");
+    }
+    else{
+      res.send("Enter!");
+    }
+  });
+
+});
 app.get("/:rfidno", (req, res) => {
   const rfidno = req.params.rfidno;
   const sql = `SELECT * FROM register WHERE rfidno = '${rfidno}' `;
