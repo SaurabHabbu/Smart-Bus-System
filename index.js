@@ -94,7 +94,7 @@ app.get("/bus_fetch",(req, res) => {
 
 app.get("/wallet/:rfidno",(req, res) => {
   const rfidno = req.params.rfidno;
-  const sql = `SELECT  FROM register WHERE rfidno = '${rfidno}'`;
+  const sql = `SELECT wallet_amt FROM register WHERE rfidno = '${rfidno}'`;
   connection.query(sql, (err, result) => {
     if (err) {
       console.error("Error executing MySQL query: ", err);
