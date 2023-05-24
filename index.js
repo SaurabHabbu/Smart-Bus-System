@@ -15,10 +15,10 @@ const app = express();
 app.use(express.json());
 // MySQL database configuration
 const connection = mysql.createConnection({
-  host: "34.93.119.64",
-  user: "root",
-  password: "root123",
-  database: "bustrack",
+  host: "sql12.freesqldatabase.com",
+  user: "sql12620186",
+  password: "tzX9QLV3NN",
+  database: "sql12620186",
 });
 
 function dateandtime() {
