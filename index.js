@@ -299,7 +299,7 @@ function distance_calculation(error, jsonData, travel_id, rfidno) {
 
 function fare_calculation(error, jsonData, travel_id, rfidno) {
   if (error) throw error;
-  const distance = jsonData.distance.value / 1000; // convert distance from meters to kilometers
+  const distance = jsonData.distance.value/1000 ; // convert distance from meters to kilometers
   let fare = baseFare + distance * farePerKm;
   console.log(`The fare  is ${fare.toFixed(2)}`);
 
@@ -362,7 +362,7 @@ app.post("/wallet_update/:rfidno", (req, res) => {
   });
 });
 
-app.get("/wallet/:emailid", (req, res) => {
+app.get("/wallet_email/:emailid", (req, res) => {
   const emailid = req.params.emailid;
   const sql = `SELECT wallet_amt FROM register WHERE email = '${emailid}' `;
 
