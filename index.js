@@ -209,6 +209,11 @@ app.post("/user_travel_init", (req, res) => {
   res.send(true);
 });
 
+app.post("/user_loc",(req,res) =>  {
+  const data = req.body;
+  console.log(data);
+});
+
 app.post("/user_tapout", (req, res) => {
   const data = req.body;
   var rfidno = data["rfidno"];
