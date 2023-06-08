@@ -16,9 +16,9 @@ app.use(express.json());
 // MySQL database configuration
 const connection = mysql.createConnection({
   host: "sql12.freesqldatabase.com",
-  user: "sql12620186",
-  password: "tzX9QLV3NN",
-  database: "sql12620186",
+  user: "sql12624277",
+  password: "1FkK4dFeyX",
+  database: "sql12624277",
 });
 
 function dateandtime() {
@@ -308,7 +308,7 @@ function fare_calculation(error, jsonData, travel_id, rfidno) {
   let fare = baseFare + distance * farePerKm;
   console.log(`The fare  is ${fare.toFixed(2)}`);
 
-  const sql = `UPDATE  user_travel SET  amt_detect = '${fare}'  WHERE id = '${travel_id}' `;
+  const sql = `UPDATE  user_travel SET  amt_deduct = '${fare}'  WHERE id = '${travel_id}' `;
   //let values = [1,data["rfidno"],data["bus_uniqueno"],data["inlat"],data["inlong"],data["inlat"],data["inlong"],1,0,"None", "dsf"];
 
   connection.query(sql, (err, result) => {
