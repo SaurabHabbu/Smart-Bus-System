@@ -1,6 +1,7 @@
 const express = require("express");
 const distance = require("googlemaps/lib/distance");
 const mysql = require("mysql");
+//const firebase_db = require("./configdb");
 const googleMapsClient = require("@google/maps").createClient({
   key: "AIzaSyBXimlauknGEyl2PSJeTTh8ykMZVUNUn8E",
 });
@@ -11,15 +12,35 @@ const farePerKm = 2.0;
 const peakHourSurcharge = 1.0;
 
 const app = express();
+const { initializeApp } = require("firebase/app");
+const { getFirestore,collection,getDoc,getDocs,query, where } =require("firebase/firestore");
+//import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = initializeApp({
+  apiKey: "AIzaSyBBVKrAAKNfzV49CDztR5EggpWo_e9XziE",
+  authDomain: "finalyearproject-1e06f.firebaseapp.com",
+  projectId: "finalyearproject-1e06f",
+  storageBucket: "finalyearproject-1e06f.appspot.com",
+  messagingSenderId: "509940526774",
+  appId: "1:509940526774:web:2420d6c1539165e4834017",
+  measurementId: "G-TZ1TDZ5Z4D"
+});
+
+// Initialize Firebase
+//const app = initializeApp(firebaseConfig);
+const firebase_db =  getFirestore(firebaseConfig);
+
+const bus_info_col = collection(firebase_db,"bus_info");
+const user_info = collection(firebase_db,"user_info");
+//const bus_info_col = collection(firebase_db,"bus_info");
+//const analytics = getAnalytics(app);
 app.use(express.json());
 // MySQL database configuration
-const connection = mysql.createConnection({
-  host: "sql12.freesqldatabase.com",
-  user: "sql12624277",
-  password: "1FkK4dFeyX",
-  database: "sql12624277",
-});
+
 
 function dateandtime() {
   let date_time = new Date();
@@ -50,47 +71,26 @@ function dateandtime() {
 var dt = dateandtime();
 
 console.log(dt);
-// Connect to MySQL database
-connection.connect((err) => {
-  if (err) {
-    console.error("Error connecting to MySQL database: ", err);
-    return;
-  }
-  console.log("Connected to MySQL database!");
-});
-app.get("/", (req, res) => {
- 
-  
-    res.send("itsme saurab habbu");
- 
-});
+
+
 // API route to get a specific parameter
 app.get("/user_fetch/:emailid", (req, res) => {
   const emailid = req.params.emailid;
-  const sql = `SELECT * FROM register WHERE email = '${emailid}'`;
-  connection.query(sql, (err, [result]) => {
-    if (err) {
-      console.error("Error executing MySQL query: ", err);
-      res.status(500).send("Error executing MySQL query");
-      return;
-    }
-    res.send(result);
+  
+});
+
+app.get("/bus_fetch",async (req, res) => {
+    var newJson = [];
+    const orderquery = query( bus_info_col);
+    const snapshot = await getDocs(orderquery);
+    snapshot.forEach((snap) => {
+      newJson.push(snap.data());
+    });
+    res.send(newJson);
+    //const docdata = alldocs.data();
+    //res.send(docdata);
+
   });
-});
-
-app.get("/bus_fetch",(req, res) => {
-  const sql = `SELECT * FROM bus_info `;
-  connection.query(sql, (err, [result]) => {
-    if (err) {
-      console.error("Error executing MySQL query: ", err);
-      res.status(500).send("Error executing MySQL query");
-      return;
-    }
-
-    res.send(result)
-
-});
-});
 
 app.get("/wallet/:rfidno",(req, res) => {
   const rfidno = req.params.rfidno;
@@ -145,18 +145,28 @@ app.get("/amt_present/:rfidno", (req,res) => {
   });
 
 });
-app.get("/:rfidno", (req, res) => {
-  const rfidno = req.params.rfidno;
-  const sql = `SELECT * FROM register WHERE rfidno = '${rfidno}' `;
 
-  connection.query(sql, (err, result) => {
-    if (err) {
-      console.error("Error executing MySQL query: ", err);
-      res.status(500).send("Error executing MySQL query");
-      return;
+app.get("/rfid_present/:rfidno", async (req, res) => {
+  const rfidno = req.params.rfidno;
+  
+
+  // Create a query to find documents where 'rfid' field is equal to 'rfidno'
+  const q = query(user_info, where('rfidno', '==', rfidno));
+
+  try {
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+     
+      const matchingDoc = querySnapshot.docs[0].data();
+      res.send(true);
+    } else {
+      
+      res.send(false);
     }
-    res.send("true");
-  });
+  } catch (error) {
+    console.error("Error fetching documents:", error);
+    res.status(500).send("Error fetching documents");
+  }
 });
 
 app.get("/tapout/:rfidno", (req, res) => {
