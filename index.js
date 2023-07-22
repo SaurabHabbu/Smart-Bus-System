@@ -7,19 +7,15 @@ const googleMapsClient = require("@google/maps").createClient({
 });
 const axios = require("axios");
 
+
 const baseFare = 2.5;
 const farePerKm = 2.0;
 const peakHourSurcharge = 1.0;
 
 const app = express();
 const { initializeApp } = require("firebase/app");
-const { getFirestore,collection,getDoc,getDocs,query, where } =require("firebase/firestore");
-//import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+const { getFirestore,collection,getDoc,getDocs,query, where,doc,setDoc,updateDoc } =require("firebase/firestore");
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = initializeApp({
   apiKey: "AIzaSyBBVKrAAKNfzV49CDztR5EggpWo_e9XziE",
   authDomain: "finalyearproject-1e06f.firebaseapp.com",
@@ -92,19 +88,28 @@ app.get("/bus_fetch",async (req, res) => {
 
   });
 
-app.get("/wallet/:rfidno",(req, res) => {
+app.get("/wallet/:rfidno",async (req, res) => {
   const rfidno = req.params.rfidno;
-  const sql = `SELECT wallet_amt FROM register WHERE rfidno = '${rfidno}'`;
-  connection.query(sql, (err, [result]) => {
-    if (err) {
-      console.error("Error executing MySQL query: ", err);
-      res.status(500).send("Error executing MySQL query");
-      return;
+  const q = query(user_info, where('rfidno', '==', rfidno));
+  var wallet_amt = [];
+  try {
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+     
+      const matchingDoc = querySnapshot.docs[0].data();
+      var wallet_amt = matchingDoc.wallet_amt;
+      res.send({"wallet_amt": matchingDoc.wallet_amt});
+      
+      
+    } else {
+      
+      res.send(false);
     }
+  } catch (error) {
+    console.error("Error fetching documents:", error);
+    res.status(500).send("Error fetching documents");
+  }
 
-    res.send(result)
-
-});
 });
 
 app.get("/user_history/:rfidno", (req, res) => {
@@ -185,20 +190,20 @@ app.get("/tapout/:rfidno", (req, res) => {
   });
 });
 
-app.post("/bus_location_update", (req, res) => {
+app.post("/bus_location_update", async (req, res) => {
+  
   const data = req.body;
+  const id = doc(firebase_db,'bus_info/'+data["bus_uniqueno"]+'');
+ 
+  const docdata = {
+    lat : data["lat"],
+    long : data["long"],
 
-  const sql = `UPDATE bus_info SET lat = '${data["lat"]}' , longi = '${data["long"]}' WHERE unique_no = '${data["bus_uniqueno"]}'`;
+  };
 
-  connection.query(sql, (err, result) => {
-    if (err) {
-      console.error("error", err);
-      res.status(500).send("error executing MYSQL query");
-      return;
-    }
-    res.send("true");
-    //console.log(data["lat"]);
-  });
+  updateDoc(id,docdata); 
+  res.send(true);
+
 });
 
 app.post("/user_travel_init", (req, res) => {
