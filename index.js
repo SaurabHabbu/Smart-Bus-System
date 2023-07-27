@@ -14,7 +14,7 @@ const peakHourSurcharge = 1.0;
 
 const app = express();
 const { initializeApp } = require("firebase/app");
-const { getFirestore,collection,getDoc,getDocs,query, where,doc,setDoc,updateDoc } =require("firebase/firestore");
+const { getFirestore,collection,getDoc,getDocs,query, where,doc,setDoc,updateDoc, addDoc } =require("firebase/firestore");
 
 const firebaseConfig = initializeApp({
   apiKey: "AIzaSyBBVKrAAKNfzV49CDztR5EggpWo_e9XziE",
@@ -32,6 +32,8 @@ const firebase_db =  getFirestore(firebaseConfig);
 
 const bus_info_col = collection(firebase_db,"bus_info");
 const user_info = collection(firebase_db,"user_info");
+const user_travel_col = collection(firebase_db,"user_travel");
+
 //const bus_info_col = collection(firebase_db,"bus_info");
 //const analytics = getAnalytics(app);
 app.use(express.json());
@@ -70,9 +72,27 @@ console.log(dt);
 
 
 // API route to get a specific parameter
-app.get("/user_fetch/:emailid", (req, res) => {
+app.get("/user_fetch/:emailid", async (req, res) => {
   const emailid = req.params.emailid;
-  
+  const q = query(user_info, where('email', '==', emailid));
+  //var wallet_amt = [];
+  try {
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+     
+      const matchingDoc = querySnapshot.docs[0].data();
+      
+      res.send(matchingDoc);
+
+      
+    } else {
+      
+      res.send(false);
+    }
+  } catch (error) {
+    console.error("Error fetching documents:", error);
+    res.status(500).send("Error fetching documents");
+  }
 });
 
 app.get("/bus_fetch",async (req, res) => {
@@ -130,24 +150,34 @@ app.get("/user_history/:rfidno", (req, res) => {
 });
 
 
-app.get("/amt_present/:rfidno", (req,res) => {
+app.get("/amt_present/:rfidno", async (req,res) => {
   const rfidno = req.params.rfidno;
-  const sql = `SELECT wallet_amt FROM register WHERE rfidno = '${rfidno}' `;
-
-  connection.query(sql, (err, [result]) => {
-    if (err) {
-      console.error("Error executing MySQL query: ", err);
-      res.status(500).send("Error executing MySQL query");
-      return;
+  const q = query(user_info, where('rfidno', '==', rfidno));
+  var wallet_amt = [];
+  try {
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+     
+      const matchingDoc = querySnapshot.docs[0].data();
+      var wallet_amt = matchingDoc.wallet_amt;
+      //res.send({"wallet_amt": matchingDoc.wallet_amt});
+      //var wallet_amt = result["wallet_amt"];
+      if(wallet_amt < 50){
+        res.send("No Entry!Recharge");
+      }
+      else{
+        res.send("Enter!");
+      }
+   
+      
+    } else {
+      
+      res.send(false);
     }
-    var wallet_amt = result["wallet_amt"];
-    if(wallet_amt < 50){
-      res.send("No Entry!Recharge");
-    }
-    else{
-      res.send("Enter!");
-    }
-  });
+  } catch (error) {
+    console.error("Error fetching documents:", error);
+    res.status(500).send("Error fetching documents");
+  }
 
 });
 
@@ -176,18 +206,8 @@ app.get("/rfid_present/:rfidno", async (req, res) => {
 
 app.get("/tapout/:rfidno", (req, res) => {
   const rfidno = req.params.rfidno;
-  const sql = `SELECT id FROM user_travel WHERE rfidno = '${rfidno}' and tap_out = '0' `;
-
-  connection.query(sql, (err, [result]) => {
-    if (err) {
-      console.error("Error executing MySQL query: ", err);
-      res.status(500).send("Error executing MySQL query");
-      return;
-    }
-
-    res.send(result);
-    //console.log(result[0]);
-  });
+  
+  
 });
 
 app.post("/bus_location_update", async (req, res) => {
@@ -206,22 +226,16 @@ app.post("/bus_location_update", async (req, res) => {
 
 });
 
-app.post("/user_travel_init", (req, res) => {
+app.post("/user_travel_init", async (req, res) => {
   const data = req.body;
   console.log(data);
   var datetime = dateandtime();
-  const sql = `INSERT INTO user_travel (rfidno, bus_uniqueno, in_lat , in_long  , tap_in , tap_out , date) VALUES ('${data["rfidno"]}', '${data["bus_uniqueno"]}', '${data["inlat"]}' , '${data["inlong"]}', '1' , '0', '${datetime}')`;
-  //let values = [1,data["rfidno"],data["bus_uniqueno"],data["inlat"],data["inlong"],data["inlat"],data["inlong"],1,0,"None", "dsf"];
+  const rfidno = data["rfidno"];
+  const rfid_travel = collection(user_travel_col,rfidno,'/travel');
+  //const rfid_final = collection('travel');
 
-  connection.query(sql, (err, result) => {
-    if (err) {
-      console.error("error", err);
-      res.status(500).send("error executing MYSQL query");
-      return;
-    }
-    //console.log(data["rfidno"]);
-  });
-  res.send(true);
+  const newdoc = await addDoc(rfid_travel,data);
+  res.send(newdoc.path);
 });
 
 app.post("/user_loc",(req,res) =>  {
@@ -229,13 +243,35 @@ app.post("/user_loc",(req,res) =>  {
   console.log(data);
 });
 
-app.post("/user_tapout", (req, res) => {
+app.get("/wallet_email/:emailid", async (req, res) => {
+  const emailid = req.params.emailid;
+  const q = query(user_info, where('rfidno', '==', rfidno));
+  var wallet_amt = [];
+  try {
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+     
+      const matchingDoc = querySnapshot.docs[0].data();
+      var wallet_amt = matchingDoc.wallet_amt;
+      res.send({"wallet_amt": matchingDoc.wallet_amt});
+      
+      
+    } else {
+      
+      res.send(false);
+    }
+  } catch (error) {
+    console.error("Error fetching documents:", error);
+    res.status(500).send("Error fetching documents");
+  }
+
+});
+
+/* app.post("/wallet_update/:rfidno", (req, res) => {
+  const rfidno = req.params.rfidno;
   const data = req.body;
-  var rfidno = data["rfidno"];
-  var travel_id = data["travel_id"];
-  console.log(data);
-  var datetime = dateandtime();
-  const sql = `UPDATE  user_travel SET  out_lat = '${data["outlat"]}' , out_long = '${data["outlong"]}'  , tap_out = '1' WHERE rfidno = '${data["rfidno"]}' and bus_uniqueno = '${data["bus_uniqueno"]}' and id = '${data["travel_id"]}' `;
+  console.log(rfidno);
+  const sql = `UPDATE  register SET  wallet_amt = '${data["new_amt"]}'  WHERE rfidno = '${rfidno}' `;
   //let values = [1,data["rfidno"],data["bus_uniqueno"],data["inlat"],data["inlong"],data["inlat"],data["inlong"],1,0,"None", "dsf"];
 
   connection.query(sql, (err, result) => {
@@ -244,32 +280,76 @@ app.post("/user_tapout", (req, res) => {
       res.status(500).send("error executing MYSQL query");
       return;
     }
+    res.send(result);
   });
+}); */
 
-  res.send(true);
-  const sql1 = `SELECT in_lat,in_long,out_lat,out_long FROM user_travel WHERE rfidno = '${rfidno}' and id = '${travel_id}' `;
-  //var inloc,outloc;
-  let fare;
-  connection.query(sql1, (err, [result]) => {
-    if (err) {
-      console.error("Error executing MySQL query: ", err);
-      res.status(500).send("Error executing MySQL query");
-      return;
+app.post("/user_tapout", async (req, res) => {
+  const data = req.body;
+  var rfidno = data["rfidno"];
+  var travel_id = data["travel_id"];
+  console.log(data);
+  var datetime = dateandtime();
+  const rfid_travel = collection(user_travel_col,rfidno,'/travel');
+  //const rfid_travel = doc(firebase_db,'bus_travel/'+data["bus_uniqueno"]);
+  //String data = "{\"rfidno\":\""+ tagUID +"\",\"bus_uniqueno\":\""+ busid +"\",\"inlat\":"+ latitude +",\"inlong\":"+ longitude +",\"tapOut\":"+ false +"}";
+  console.log(rfid_travel);
+  const docdata = {
+    rfidno : data["rfidno"],
+    bus_uniqueno : data["bus_uniqueno"],
+    outlat : data["outlat"],
+    outlong : data["outlong"],
+    tapOut : data["tapOut"]
+
+  };
+
+ /*  const snapshot = await user_info.where('rfidno', '==', rfidno).get();
+  if (snapshot.empty) {
+    console.log('No matching documents.');
+    return;
+  }  
+
+  snapshot.forEach(doc => {
+    console.log(doc.id, '=>', doc.data());
+  }); */
+  const q = query(rfid_travel, where('tapOut', '==', false));
+  console.log(q);
+  try {
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+     
+      const matchingDoc = querySnapshot.docs[0];
+      const matchingdocref = matchingDoc.ref;
+      //console.log(matchingDoc.get());
+      updateDoc(matchingdocref,docdata); 
+      res.send(true);
+    } else {
+      
+      res.send(false);
     }
-    console.log(result);
-    var inlat = result["in_lat"];
-    var inlong = result["in_long"];
-    inloc = inlat + "," + inlong;
-    var outlat = result["in_lat"];
-    var outlong = result["in_long"];
-    outloc = outlat + "," + outlong;
-    console.log(inloc);
-    get_mapsjson(distance_calculation, rfidno, travel_id, inloc, outloc);
+  } catch (error) {
+    console.error("Error fetching documents:", error);
+    res.status(500).send("Error fetching documents");
+  }
+  
+ 
+  //res.send(true);
 
-    get_mapsjson(fare_calculation, rfidno, travel_id, inloc, outloc);
+  //res.send(true);
+ /*  console.log(result);
+  var inlat = result["in_lat"];
+  var inlong = result["in_long"];
+  inloc = inlat + "," + inlong;
+  var outlat = result["in_lat"];
+  var outlong = result["in_long"];
+  outloc = outlat + "," + outlong;
+  console.log(inloc);
+  get_mapsjson(distance_calculation, rfidno, travel_id, inloc, outloc);
 
-    console.log(fare);
-  });
+  get_mapsjson(fare_calculation, rfidno, travel_id, inloc, outloc);
+
+  console.log(fare); */
+
 });
 
 
@@ -364,37 +444,6 @@ function fare_calculation(error, jsonData, travel_id, rfidno) {
       console.log(error);
     });
 }
-
-app.post("/wallet_update/:rfidno", (req, res) => {
-  const rfidno = req.params.rfidno;
-  const data = req.body;
-  console.log(rfidno);
-  const sql = `UPDATE  register SET  wallet_amt = '${data["new_amt"]}'  WHERE rfidno = '${rfidno}' `;
-  //let values = [1,data["rfidno"],data["bus_uniqueno"],data["inlat"],data["inlong"],data["inlat"],data["inlong"],1,0,"None", "dsf"];
-
-  connection.query(sql, (err, result) => {
-    if (err) {
-      console.error("error", err);
-      res.status(500).send("error executing MYSQL query");
-      return;
-    }
-    res.send(result);
-  });
-});
-
-app.get("/wallet_email/:emailid", (req, res) => {
-  const emailid = req.params.emailid;
-  const sql = `SELECT wallet_amt FROM register WHERE email = '${emailid}' `;
-
-  connection.query(sql, (err, [result]) => {
-    if (err) {
-      console.error("Error executing MySQL query: ", err);
-      res.status(500).send("Error executing MySQL query");
-      return;
-    }
-    res.send(result);
-  });
-});
 
 // Start the server
 const port = 5000;
