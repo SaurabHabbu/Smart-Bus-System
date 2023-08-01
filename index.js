@@ -132,21 +132,20 @@ app.get("/wallet/:rfidno",async (req, res) => {
 
 });
 
-app.get("/user_history/:rfidno", (req, res) => {
- 
+app.get("/user_history/:rfidno", async (req, res) => {
+  
+  const newjson = [];
   const rfidno = req.params.rfidno;
-  const sql = `SELECT * FROM user_travel WHERE rfidno = '${rfidno}'`;
-  connection.query(sql, (err, result) => {
-    if (err) {
-      console.error("Error executing MySQL query: ", err);
-      res.status(500).send("Error executing MySQL query");
-      return;
-    }
-    
-    res.send(result)
-   
- 
-});
+  const user_travel_history = query(
+    collection(user_travel_col,rfidno,'travel'),
+    where('tapOut','==',true)
+
+  ); 
+  const querysnapshot = await getDocs(user_travel_history);
+  querysnapshot.forEach( (snap) => {
+    newjson.push(snap.data());
+  });
+  res.send(newjson);
 });
 
 
@@ -204,11 +203,7 @@ app.get("/rfid_present/:rfidno", async (req, res) => {
   }
 });
 
-app.get("/tapout/:rfidno", (req, res) => {
-  const rfidno = req.params.rfidno;
-  
-  
-});
+
 
 app.post("/bus_location_update", async (req, res) => {
   
@@ -267,23 +262,6 @@ app.get("/wallet_email/:emailid", async (req, res) => {
 
 });
 
-/* app.post("/wallet_update/:rfidno", (req, res) => {
-  const rfidno = req.params.rfidno;
-  const data = req.body;
-  console.log(rfidno);
-  const sql = `UPDATE  register SET  wallet_amt = '${data["new_amt"]}'  WHERE rfidno = '${rfidno}' `;
-  //let values = [1,data["rfidno"],data["bus_uniqueno"],data["inlat"],data["inlong"],data["inlat"],data["inlong"],1,0,"None", "dsf"];
-
-  connection.query(sql, (err, result) => {
-    if (err) {
-      console.error("error", err);
-      res.status(500).send("error executing MYSQL query");
-      return;
-    }
-    res.send(result);
-  });
-}); */
-
 app.post("/user_tapout", async (req, res) => {
   const data = req.body;
   var rfidno = data["rfidno"];
@@ -303,25 +281,22 @@ app.post("/user_tapout", async (req, res) => {
 
   };
 
- /*  const snapshot = await user_info.where('rfidno', '==', rfidno).get();
-  if (snapshot.empty) {
-    console.log('No matching documents.');
-    return;
-  }  
 
-  snapshot.forEach(doc => {
-    console.log(doc.id, '=>', doc.data());
-  }); */
   const q = query(rfid_travel, where('tapOut', '==', false));
-  console.log(q);
+  //console.log(q);
   try {
     const querySnapshot = await getDocs(q);
     if (!querySnapshot.empty) {
      
       const matchingDoc = querySnapshot.docs[0];
       const matchingdocref = matchingDoc.ref;
+      console.log(matchingdocref);
       //console.log(matchingDoc.get());
-      updateDoc(matchingdocref,docdata); 
+      updateDoc(matchingdocref,docdata);
+      get_mapsjson(distance_fair_calculation, matchingdocref );
+
+      //get_mapsjson(fare_calculation, matchingdocref );
+      //console.log(docdata); 
       res.send(true);
     } else {
       
@@ -333,117 +308,94 @@ app.post("/user_tapout", async (req, res) => {
   }
   
  
-  //res.send(true);
-
-  //res.send(true);
- /*  console.log(result);
-  var inlat = result["in_lat"];
-  var inlong = result["in_long"];
-  inloc = inlat + "," + inlong;
-  var outlat = result["in_lat"];
-  var outlong = result["in_long"];
-  outloc = outlat + "," + outlong;
-  console.log(inloc);
-  get_mapsjson(distance_calculation, rfidno, travel_id, inloc, outloc);
-
-  get_mapsjson(fare_calculation, rfidno, travel_id, inloc, outloc);
-
-  console.log(fare); */
 
 });
 
 
-function get_mapsjson(callback, rfidno, travel_id, inloc, outloc) {
+async function get_mapsjson(callback, docreference) {
   const mode = "driving";
+  const mysnapshot = await getDoc(docreference);
 
-  googleMapsClient.directions(
-    {
-      origin: inloc,
-      destination: outloc,
-      mode: mode,
-    },
-    (err, response) => {
-      if (err) {
-        console.log(err);
-        return;
+  if(mysnapshot.exists()){
+    const docdata = mysnapshot.data();
+    const inlat = docdata.inlat;
+    const inlong = docdata.inlong;
+    const outlat = docdata.outlat;
+    const outlong = docdata.outlong;
+    const rfidno = docdata.rfidno;
+
+    const inloc = inlat + "," + inlong;
+    const outloc = outlat + "," + outlong;
+
+
+
+    googleMapsClient.directions(
+      {
+        origin: inloc,
+        destination: outloc,
+        mode: mode,
+      },
+      (err, response) => {
+        if (err) {
+          console.log(err);
+          return;
+        }
+        console.log(response.json.routes[0].legs[0].distance);
+        return callback(null, response.json.routes[0].legs[0],rfidno,docreference);
       }
-      console.log(response.json.routes[0].legs[0].distance);
-      return callback(null, response.json.routes[0].legs[0], travel_id, rfidno);
-    }
-  );
+    );
+  }
+ 
 }
 
 
-function arrivaltime(error, jsonData, travel_id, rfidno) {
+async function arrivaltime(error, jsonData, travel_id, rfidno) {
   if (error) throw error;
   var arrival_time = jsonData.duration.text;
   console.log(arrival_time);
 }
 
-function distance_calculation(error, jsonData, travel_id, rfidno) {
+function distance_fair_calculation(error, jsonData,rfidno,docreference) {
   if (error) throw error;
-  var distance = jsonData.distance.value / 1000;
-  console.log(distance);
-  const sql = `UPDATE  user_travel SET  distance = '${distance}'  WHERE id = '${travel_id}' `;
-  //let values = [1,data["rfidno"],data["bus_uniqueno"],data["inlat"],data["inlong"],data["inlat"],data["inlong"],1,0,"None", "dsf"];
-
-  connection.query(sql, (err, result) => {
-    if (err) {
-      console.error("error", err);
-      res.status(500).send("error executing MYSQL query");
-      return;
-    }
-  });
-}
-
-
-function fare_calculation(error, jsonData, travel_id, rfidno) {
-  if (error) throw error;
-  const distance = jsonData.distance.value/1000 ; // convert distance from meters to kilometers
-  let fare = baseFare + distance * farePerKm;
+  var distance_inkm = jsonData.distance.value / 1000;
+  console.log("hello",distance_inkm);
+  let fare = baseFare + distance_inkm * farePerKm;
   console.log(`The fare  is ${fare.toFixed(2)}`);
-
-  const sql = `UPDATE  user_travel SET  amt_deduct = '${fare}'  WHERE id = '${travel_id}' `;
-  //let values = [1,data["rfidno"],data["bus_uniqueno"],data["inlat"],data["inlong"],data["inlat"],data["inlong"],1,0,"None", "dsf"];
-
-  connection.query(sql, (err, result) => {
-    if (err) {
-      console.error("error", err);
-      res.status(500).send("error executing MYSQL query");
-      return;
-    }
-  });
-
-  const apiUrl = "https://smart-bus-system-fyp.onrender.com/wallet/" + rfidno;
-
-  // Make the GET request
-  axios
-    .get(apiUrl)
-    .then((response) => {
-      // Handle the response data
-      console.log(response.data);
-
-      var wallet_amt = response.data["wallet_amt"];
-      var new_amt = wallet_amt - fare;
-
-      const postData = {
-        new_amt: new_amt,
-      };
-      if (wallet_amt > 50)
-        axios
-          .post("https://smart-bus-system-fyp.onrender.com/wallet_update/" + rfidno, postData)
-          .then((response) => {
-            console.log("Message sent successfully!");
-          })
-          .catch((error) => {
-            console.error("Error sending message:", error);
-          });
-    })
-    .catch((error) => {
-      // Handle the error
-      console.log(error);
-    });
+ 
+  const docdata = {
+    distance_travelled : distance_inkm,
+    amt_deducted : fare
+  };
+  updateDoc(docreference,docdata);
+  wallet_update(rfidno,fare);
+  
 }
+
+async function wallet_update(rfidno,fare){
+
+  const q = query(user_info, where('rfidno', '==', rfidno));
+
+  try {
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+      const wallet_amt = querySnapshot.docs[0].data().wallet_amt;
+      const docreference = querySnapshot.docs[0].ref;
+      console.log("wallet amt is ", wallet_amt);
+
+      const new_wallet_amt = wallet_amt - fare;
+
+      const docdata = {
+        wallet_amt : new_wallet_amt
+      };
+      updateDoc(docreference,docdata);
+
+    } 
+  } catch (error) {
+    console.error("Error fetching documents:", error);
+  }
+
+}
+
 
 // Start the server
 const port = 5000;
