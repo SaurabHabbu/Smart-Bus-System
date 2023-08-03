@@ -282,7 +282,7 @@ app.post("/user_tapout", async (req, res) => {
   };
 
 
-  const q = query(rfid_travel, where('tapOut', '==', false));
+  const q = query(rfid_travel, where('tapOut', '==', 0));
   //console.log(q);
   try {
     const querySnapshot = await getDocs(q);
