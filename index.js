@@ -138,7 +138,7 @@ app.get("/user_history/:rfidno", async (req, res) => {
   const rfidno = req.params.rfidno;
   const user_travel_history = query(
     collection(user_travel_col,rfidno,'travel'),
-    where('tapOut','==',true)
+    where('tapOut','==',1)
 
   ); 
   const querysnapshot = await getDocs(user_travel_history);
